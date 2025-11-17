@@ -31,7 +31,7 @@
         /* Stile di base per il body per un look pulito */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f4f7f6; /* Un grigio molto chiaro */
+            background-color: #f8faff; /* Un azzurro molto chiaro */
         }
 
         /* Stile per il pulsante di copia con feedback */
@@ -60,26 +60,29 @@
 </head>
 <body class="p-4 md:p-8">
 
-    <header class="mb-6">
-        <h1 class="text-3xl font-bold text-brand-blue">Navigatore Struttura Organizzativa</h1>
-        <p class="text-lg text-gray-600">Esplora la gerarchia delle unità organizzative.</p>
-    </header>
+    <!-- Pannello di Controllo (Header + Upload) -->
+    <div class="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow-lg mb-8">
+        <header class="mb-6">
+            <h1 class="text-3xl font-bold text-brand-blue">Navigatore Struttura Organizzativa</h1>
+            <p class="text-lg text-gray-600">Esplora la gerarchia delle unità organizzative.</p>
+        </header>
 
-    <!-- Sezione di Upload File -->
-    <div class="mb-6 max-w-7xl mx-auto">
-        <label for="csv-uploader" class="block text-sm font-medium text-gray-700 mb-2">
-            Carica il tuo file <code>.csv</code>:
-        </label>
-        <input type="file" id="csv-uploader" accept=".csv"
-               class="block w-full text-sm text-gray-500 bg-white rounded-lg shadow-sm p-2 border
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-md file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-brand-blue/10 file:text-brand-blue
-                      hover:file:bg-brand-blue/20 cursor-pointer">
+        <!-- Sezione di Upload File -->
+        <div class="max-w-7xl mx-auto">
+            <label for="csv-uploader" class="block text-sm font-medium text-gray-700 mb-2">
+                Carica il tuo file <code>.csv</code>:
+            </label>
+            <input type="file" id="csv-uploader" accept=".csv"
+                   class="block w-full text-sm text-gray-500 bg-white rounded-lg shadow-sm p-2 border
+                          file:mr-4 file:py-2 file:px-4
+                          file:rounded-md file:border-0
+                          file:text-sm file:font-semibold
+                          file:bg-brand-blue/10 file:text-brand-blue
+                          hover:file:bg-brand-blue/20 cursor-pointer">
+        </div>
     </div>
 
-    <main class="max-w-7xl mx-auto">
+    <main class="max-w-7xl mx-auto pb-32"> <!-- Aggiunto padding-bottom -->
         <!-- Il contenitore principale dove verrà costruito l'albero gerarchico -->
         <div id="content-container" class="space-y-2">
             <!-- Stato Iniziale -->
@@ -91,42 +94,17 @@
         </div>
     </main>
 
-    <!-- ========= SEZIONE PROMPT STICKY ========= -->
-    <footer class="sticky bottom-0 left-0 right-0 bg-white shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.07)] p-4 border-t border-gray-200 z-10">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div>
-                <span class="text-lg font-bold text-brand-blue">Prompt Selezionato</span>
-                <span id="prompt-count" class="ml-2 text-sm text-gray-600">(0 elementi)</span>
-            </div>
-            <div class="flex space-x-2">
-                 <button id="prompt-clear-button"
-                         class="py-2 px-4 rounded-md text-sm font-semibold bg-gray-200 hover:bg-gray-300 text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    Svuota
-                </button>
-                 <button id="prompt-copy-button"
-                         class="py-2 px-4 rounded-md text-sm font-semibold bg-brand-blue hover:bg-brand-blue/80 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    Copia Prompt
-                </button>
-            </div>
-        </div>
-    </footer>
-    <!-- Textarea nascosta per contenere il prompt da copiare -->
-    <textarea id="prompt-output-content" class="absolute -left-[9999px] top-[-9999px]"></textarea>
+    <!-- ========= SEZIONE PROMPT STICKY RIMOSSA ========= -->
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const contentContainer = document.getElementById('content-container');
             const fileInput = document.getElementById('csv-uploader');
 
-            // --- Elementi del Prompt Builder ---
-            const promptCount = document.getElementById('prompt-count');
-            const promptCopyBtn = document.getElementById('prompt-copy-button');
-            const promptClearBtn = document.getElementById('prompt-clear-button');
-            const promptOutputContent = document.getElementById('prompt-output-content');
-
-            // --- Stato Globale ---
-            let promptItems = [];
-
+            // --- Elementi del Prompt Builder RIMOSSI ---
+            
+            // --- Stato Globale RIMOSSO ---
+            
             // --- Icone SVG ---
             const folderIconSVG = `
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
@@ -222,17 +200,13 @@
                 icon.className = `flex-shrink-0 w-5 h-5 mr-2 ${hasChildren ? 'text-brand-blue' : 'text-gray-500'}`;
                 icon.innerHTML = hasChildren ? folderIconSVG : fileIconSVG;
 
-                // Testo Descrizione (ora cliccabile per prompt)
+                // Testo Descrizione (non più cliccabile per prompt)
                 const descText = document.createElement('span');
-                descText.className = `text-sm font-medium ${hasChildren ? 'text-brand-blue' : 'text-gray-800'} mr-2 truncate cursor-pointer hover:underline`;
+                descText.className = `text-sm font-medium ${hasChildren ? 'text-brand-blue' : 'text-gray-800'} mr-2 truncate`; // Rimossi cursor-pointer e hover:underline
                 descText.textContent = node.name;
                 descText.title = node.name; // Tooltip per testo lungo
                 
-                // Aggiungi al prompt al click
-                descText.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Impedisce l'apertura/chiusura del <details>
-                    addToPrompt(node);
-                });
+                // Event listener rimosso
 
                 const descCopy = createCopyButton('Copia Nome', 'Copiato!', node.name, escapeHTML(node.name));
                 
@@ -244,7 +218,7 @@
                 const siglaDiv = document.createElement('div');
                 siglaDiv.className = 'flex items-center flex-shrink-0';
                 const siglaText = document.createElement('span');
-                siglaText.className = 'text-xs font-mono bg-gray-200 text-brand-blue rounded px-2 py-1 mr-2';
+                siglaText.className = 'text-xs font-mono bg-brand-blue/10 text-brand-blue rounded px-2 py-1 mr-2'; // Sfondo colorato
                 siglaText.textContent = node.fullSigla;
                 const siglaCopy = createCopyButton('Copia Sigla', 'Copiato!', node.fullSigla, escapeHTML(node.fullSigla));
                 siglaDiv.appendChild(siglaText);
@@ -270,7 +244,7 @@
                     details.className = 'w-full rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md';
                     
                     const summary = document.createElement('summary');
-                    summary.className = 'flex justify-between items-center p-3 cursor-pointer list-none';
+                    summary.className = 'flex justify-between items-center p-3 cursor-pointer list-none transition-colors hover:bg-blue-50'; // Aggiunto hover
                     
                     // Passa 'hasChildren' per decidere icona e stile
                     const contentDiv = createNodeContent(node, hasChildren); 
@@ -298,7 +272,7 @@
                 } else {
                     // Crea un semplice <div> se non ha figli (nodo foglia)
                     const itemDiv = document.createElement('div');
-                    itemDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg shadow-sm';
+                    itemDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg shadow-sm transition-colors hover:bg-gray-50'; // Aggiunto hover
                     
                     // Passa 'hasChildren' (false) per decidere icona e stile
                     const contentDiv = createNodeContent(node, hasChildren);
@@ -307,40 +281,7 @@
                 }
             }
 
-            // --- Funzioni per il Prompt Builder ---
-
-            /**
-             * Aggiunge un nodo al prompt.
-             */
-            function addToPrompt(node) {
-                promptItems.push(node);
-                updatePromptDisplay();
-            }
-
-            /**
-             * Aggiorna la UI del prompt (contatore, textarea, bottoni).
-             */
-            function updatePromptDisplay() {
-                // Aggiorna contatore
-                promptCount.textContent = `(${promptItems.length} ${promptItems.length === 1 ? 'elemento' : 'elementi'})`;
-                
-                // Formatta il testo per la copia
-                const outputText = promptItems.map(n => `${n.name} (${n.fullSigla})`).join('\n');
-                promptOutputContent.value = outputText;
-
-                // Abilita/Disabilita bottoni
-                const hasItems = promptItems.length > 0;
-                promptCopyBtn.disabled = !hasItems;
-                promptClearBtn.disabled = !hasItems;
-
-                if (hasItems) {
-                    promptCopyBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
-                    promptClearBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
-                } else {
-                    promptCopyBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
-                    promptClearBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
-                }
-            }
+            // --- Funzioni per il Prompt Builder RIMOSSE ---
 
             // --- Logica Principale ---
 
@@ -447,21 +388,9 @@
                 reader.readAsText(file);
             });
 
-            // --- Listener per i bottoni del Prompt ---
-            promptClearBtn.addEventListener('click', () => {
-                promptItems = [];
-                updatePromptDisplay();
-            });
-
-            promptCopyBtn.addEventListener('click', () => {
-                if (promptItems.length > 0) {
-                    // Riusa la funzione di copia esistente
-                    copyToClipboard(promptCopyBtn, promptOutputContent.value, 'Copiato!');
-                }
-            });
-
-            // Inizializza lo stato dei bottoni all'avvio
-            updatePromptDisplay();
+            // --- Listener per i bottoni del Prompt RIMOSSI ---
+            
+            // Inizializzazione bottoni RIMOSSA
         });
     </script>
 </body>
