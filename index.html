@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigatore Struttura Organizzativa</title>
+    <link rel="icon" href="favicon.ico">
+    
+    <!-- Caricamento di Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Configurazione personalizzata di Tailwind per i colori brand -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-blue': '#0146bc',
+                        'brand-yellow': '#eddc01',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Stili CSS personalizzati -->
+    <style>
+        /* Stile di base per il body per un look pulito */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6; /* Un grigio molto chiaro */
+        }
+
+        /* Stile per il pulsante di copia con feedback */
+        .copy-button.copied {
+            background-color: #22c55e; /* green-500 */
+            color: white;
+        }
+
+        /* Nasconde il marcatore predefinito dell'elemento <details> */
+        summary {
+            list-style-type: none;
+        }
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        /* Stile per l'icona chevron (freccia) */
+        .chevron {
+            transition: transform 0.2s ease-in-out;
+        }
+        /* Ruota l'icona quando l'elemento <details> è aperto */
+        details[open] > summary .chevron {
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="mb-6">
+        <h1 class="text-3xl font-bold text-brand-blue">Navigatore Struttura Organizzativa</h1>
+        <p class="text-lg text-gray-600">Esplora la gerarchia delle unità organizzative.</p>
+    </header>
+
+    <!-- Sezione di Upload File -->
+    <div class="mb-6 max-w-7xl mx-auto">
+        <label for="csv-uploader" class="block text-sm font-medium text-gray-700 mb-2">
+            Carica il tuo file <code>.csv</code>:
+        </label>
+        <input type="file" id="csv-uploader" accept=".csv"
+               class="block w-full text-sm text-gray-500 bg-white rounded-lg shadow-sm p-2 border
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-md file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-brand-blue/10 file:text-brand-blue
+                      hover:file:bg-brand-blue/20 cursor-pointer">
+    </div>
+
+    <main class="max-w-7xl mx-auto">
+        <!-- Il contenitore principale dove verrà costruito l'albero gerarchico -->
+        <div id="content-container" class="space-y-2">
+            <!-- Stato Iniziale -->
+            <div id="initial-prompt" class="flex flex-col items-center justify-center p-10 bg-white rounded-lg shadow-sm text-gray-500">
+                <svg class="w-12 h-12 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span class="text-lg font-medium">In attesa del file...</span>
+                <p class="text-sm">Seleziona un file <code>.csv</code> utilizzando il campo qui sopra.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const contentContainer = document.getElementById('content-container');
+            const fileInput = document.getElementById('csv-uploader');
+
+            // --- Funzioni Helper per la UI (INVARIATE) ---
+
+            /**
+             * Crea un pulsante "Copia".
+             */
+            function createCopyButton(title, copiedText, textToCopy, escapedText) {
+                const button = document.createElement('button');
+                button.className = 'copy-button ml-2 p-1.5 rounded-md bg-gray-100 hover:bg-brand-blue hover:text-white text-gray-600 transition-colors duration-200';
+                button.title = title;
+                button.setAttribute('data-copy', escapedText);
+                button.setAttribute('data-copied-text', copiedText);
+                
+                // Icona "Copia"
+                button.innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>`;
+                
+                button.addEventListener('click', (e) => {
+                    e.preventDefault(); // Impedisce l'apertura/chiusura del <details>
+                    e.stopPropagation(); // Ferma la propagazione
+                    copyToClipboard(button, textToCopy, copiedText);
+                });
+                return button;
+            }
+
+            /**
+             * Copia il testo negli appunti.
+             */
+            function copyToClipboard(buttonElement, text, copiedText) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = 0;
+                document.body.appendChild(textarea);
+                textarea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    
+                    const originalIcon = buttonElement.innerHTML;
+                    buttonElement.innerHTML = copiedText; // Mostra testo "Copiato!"
+                    buttonElement.classList.add('copied');
+                    
+                    setTimeout(() => {
+                        buttonElement.innerHTML = originalIcon; // Ripristina l'icona
+                        buttonElement.classList.remove('copied');
+                    }, 2000);
+
+                } catch (err) {
+                    console.error('Impossibile copiare il testo:', err);
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            }
+
+            /**
+             * Fa l'escape dell'HTML per gli attributi data-.
+             */
+            function escapeHTML(str) {
+                return str.replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&#039;');
+            }
+
+            /**
+             * Crea il contenuto HTML per un nodo (nome, sigla, pulsanti).
+             */
+            function createNodeContent(node) {
+                const content = document.createElement('div');
+                content.className = 'flex-grow flex flex-col md:flex-row md:items-center justify-between min-w-0'; // min-w-0 per wrapping
+
+                // Lato sinistro (Descrizione)
+                const descDiv = document.createElement('div');
+                descDiv.className = 'flex-grow flex items-center mb-2 md:mb-0 min-w-0 pr-4'; // min-w-0 e pr-4
+                const descText = document.createElement('span');
+                descText.className = 'text-sm font-medium text-gray-800 mr-2 truncate'; // Aggiunto truncate
+                descText.textContent = node.name;
+                descText.title = node.name; // Tooltip per testo lungo
+                const descCopy = createCopyButton('Copia Nome', 'Copiato!', node.name, escapeHTML(node.name));
+                descDiv.appendChild(descText);
+                descDiv.appendChild(descCopy);
+
+                // Lato destro (Sigla)
+                const siglaDiv = document.createElement('div');
+                siglaDiv.className = 'flex items-center flex-shrink-0';
+                const siglaText = document.createElement('span');
+                siglaText.className = 'text-xs font-mono bg-gray-200 text-brand-blue rounded px-2 py-1 mr-2';
+                siglaText.textContent = node.fullSigla;
+                const siglaCopy = createCopyButton('Copia Sigla', 'Copiato!', node.fullSigla, escapeHTML(node.fullSigla));
+                siglaDiv.appendChild(siglaText);
+                siglaDiv.appendChild(siglaCopy);
+                
+                content.appendChild(descDiv);
+                content.appendChild(siglaDiv);
+                return content;
+            }
+
+            /**
+             * Funzione ricorsiva per renderizzare l'albero.
+             */
+            function renderNode(node, container) {
+                const hasChildren = Object.keys(node.children).length > 0;
+                
+                // Ordina i figli alfabeticamente per nome (descrizione)
+                const sortedChildren = Object.values(node.children).sort((a, b) => a.name.localeCompare(b.name));
+
+                if (hasChildren) {
+                    // Crea un <details> se ha figli
+                    const details = document.createElement('details');
+                    details.className = 'w-full rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md';
+                    
+                    const summary = document.createElement('summary');
+                    summary.className = 'flex justify-between items-center p-3 cursor-pointer list-none';
+                    
+                    const contentDiv = createNodeContent(node);
+                    
+                    // Icona Chevron
+                    const chevron = document.createElement('span');
+                    chevron.className = 'chevron flex-shrink-0 text-gray-500 ml-2';
+                    chevron.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
+
+                    summary.appendChild(contentDiv);
+                    summary.appendChild(chevron);
+                    details.appendChild(summary);
+
+                    // Contenitore per i figli
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.className = 'pl-6 pb-2 pr-2 space-y-2'; // Indentazione per i figli
+                    
+                    sortedChildren.forEach(child => {
+                        renderNode(child, childrenContainer); // Chiamata ricorsiva
+                    });
+                    
+                    details.appendChild(childrenContainer);
+                    container.appendChild(details);
+
+                } else {
+                    // Crea un semplice <div> se non ha figli (nodo foglia)
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg shadow-sm';
+                    
+                    const contentDiv = createNodeContent(node);
+                    itemDiv.appendChild(contentDiv);
+                    container.appendChild(itemDiv);
+                }
+            }
+
+            // --- Logica Principale ---
+
+            /**
+             * Funzione per analizzare il CSV e costruire l'albero.
+             * QUESTA FUNZIONE È INVARIATA, riceve solo il testo da una fonte diversa.
+             */
+            function processData(csvText) {
+                try {
+                    // Pulisce il contenitore (rimuove il prompt o il loader)
+                    contentContainer.innerHTML = '';
+
+                    const data = csvText.trim().split('\n')
+                        .map(row => {
+                            // Gestisce le virgolette nel CSV
+                            const columns = row.split('","').map(col => col.replace(/"/g, ''));
+                            return columns;
+                        })
+                        .filter(row => row.length === 2 && row[0] && row[1]); // Filtra righe non valide
+
+                    // Costruisce l'albero
+                    const treeRoot = { children: {} };
+
+                    data.forEach(row => {
+                        const description = row[0];
+                        const sigla = row[1];
+                        const parts = sigla.split('/');
+                        
+                        let currentNode = treeRoot;
+                        let currentPath = [];
+
+                        // Itera su ogni parte della sigla (es. "ACQ", "AL", "F")
+                        for (const part of parts) {
+                            currentPath.push(part);
+                            const fullSiglaPart = currentPath.join('/');
+                            
+                            if (!currentNode.children[part]) {
+                                // Se il nodo non esiste, lo crea con un nome/sigla di fallback
+                                currentNode.children[part] = {
+                                    key: part,
+                                    fullSigla: fullSiglaPart,
+                                    name: part, // Fallback name
+                                    children: {}
+                                };
+                            }
+                            // Si sposta al nodo figlio
+                            currentNode = currentNode.children[part];
+                        }
+                        
+                        // Alla fine del ciclo, aggiorna il nodo con i dati corretti dalla riga CSV
+                        currentNode.name = description;
+                        currentNode.fullSigla = sigla;
+                    });
+
+                    // Avvia la renderizzazione partendo dai nodi radice
+                    const rootNodes = Object.values(treeRoot.children).sort((a, b) => a.name.localeCompare(b.name));
+                    
+                    if (rootNodes.length > 0) {
+                        rootNodes.forEach(node => {
+                            renderNode(node, contentContainer);
+                        });
+                    } else {
+                        contentContainer.innerHTML = '<p class="text-red-500">Nessun dato valido trovato nel file CSV selezionato.</p>';
+                    }
+                } catch (error) {
+                    console.error("Errore durante l'analisi del CSV:", error);
+                    contentContainer.innerHTML = `<p class="text-red-600 font-medium">Impossibile analizzare i dati. ${error.message}</p>`;
+                }
+            }
+            
+            // Aggiungi il listener per l'input del file
+            fileInput.addEventListener('change', (event) => {
+                const files = event.target.files;
+                if (files.length === 0) {
+                    return; // Nessun file selezionato
+                }
+                const file = files[0];
+
+                // 1. Mostra un loader mentre legge
+                contentContainer.innerHTML = `
+                    <div id="loader" class="flex items-center justify-center p-10 bg-white rounded-lg shadow-sm">
+                        <svg class="animate-spin h-8 w-8 text-brand-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="ml-3 text-gray-600">Lettura del file...</span>
+                    </div>`;
+
+                // 2. Leggi il file
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                    const csvText = e.target.result;
+                    // 3. Processa i dati (questa funzione pulirà il loader)
+                    processData(csvText);
+                };
+
+                reader.onerror = (e) => {
+                    console.error("Errore durante la lettura del file:", e);
+                    contentContainer.innerHTML = `<p class="text-red-600 font-medium">Impossibile leggere il file. ${e.message}</p>`;
+                };
+
+                // Avvia la lettura del file
+                reader.readAsText(file);
+            });
+        });
+    </script>
+</body>
+</html>
