@@ -91,12 +91,54 @@
         </div>
     </main>
 
+    <!-- ========= SEZIONE PROMPT STICKY ========= -->
+    <footer class="sticky bottom-0 left-0 right-0 bg-white shadow-[0_-4px_10px_-1px_rgba(0,0,0,0.07)] p-4 border-t border-gray-200 z-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+                <span class="text-lg font-bold text-brand-blue">Prompt Selezionato</span>
+                <span id="prompt-count" class="ml-2 text-sm text-gray-600">(0 elementi)</span>
+            </div>
+            <div class="flex space-x-2">
+                 <button id="prompt-clear-button"
+                         class="py-2 px-4 rounded-md text-sm font-semibold bg-gray-200 hover:bg-gray-300 text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Svuota
+                </button>
+                 <button id="prompt-copy-button"
+                         class="py-2 px-4 rounded-md text-sm font-semibold bg-brand-blue hover:bg-brand-blue/80 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Copia Prompt
+                </button>
+            </div>
+        </div>
+    </footer>
+    <!-- Textarea nascosta per contenere il prompt da copiare -->
+    <textarea id="prompt-output-content" class="absolute -left-[9999px] top-[-9999px]"></textarea>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const contentContainer = document.getElementById('content-container');
             const fileInput = document.getElementById('csv-uploader');
 
-            // --- Funzioni Helper per la UI (INVARIATE) ---
+            // --- Elementi del Prompt Builder ---
+            const promptCount = document.getElementById('prompt-count');
+            const promptCopyBtn = document.getElementById('prompt-copy-button');
+            const promptClearBtn = document.getElementById('prompt-clear-button');
+            const promptOutputContent = document.getElementById('prompt-output-content');
+
+            // --- Stato Globale ---
+            let promptItems = [];
+
+            // --- Icone SVG ---
+            const folderIconSVG = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                  <path fill-rule="evenodd" d="M2 4.75A2.75 2.75 0 0 1 4.75 2h5.5A2.75 2.75 0 0 1 13 4.75v1.5a.75.75 0 0 1-1.5 0v-1.5a1.25 1.25 0 0 0-1.25-1.25h-5.5A1.25 1.25 0 0 0 3.5 4.75v10.5a1.25 1.25 0 0 0 1.25 1.25h10.5a1.25 1.25 0 0 0 1.25-1.25v-8.5a.75.75 0 0 1 1.5 0v8.5a2.75 2.75 0 0 1-2.75 2.75H4.75A2.75 2.75 0 0 1 2 15.25V4.75Z" clip-rule="evenodd" />
+                </svg>`;
+            const fileIconSVG = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                  <path fill-rule="evenodd" d="M4 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.707a2 2 0 0 0-.586-1.414l-4.293-4.293A2 2 0 0 0 11.707 2H4Zm6 6a1 1 0 1 0-2 0v2H6a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0v-2h2a1 1 0 1 0 0-2h-2V8Z" clip-rule="evenodd" />
+                </svg>`;
+
+
+            // --- Funzioni Helper per la UI ---
 
             /**
              * Crea un pulsante "Copia".
@@ -165,19 +207,36 @@
 
             /**
              * Crea il contenuto HTML per un nodo (nome, sigla, pulsanti).
+             * Aggiunta logica per icone e selezione prompt.
              */
-            function createNodeContent(node) {
+            function createNodeContent(node, hasChildren) {
                 const content = document.createElement('div');
                 content.className = 'flex-grow flex flex-col md:flex-row md:items-center justify-between min-w-0'; // min-w-0 per wrapping
 
-                // Lato sinistro (Descrizione)
+                // Lato sinistro (Icona + Descrizione)
                 const descDiv = document.createElement('div');
                 descDiv.className = 'flex-grow flex items-center mb-2 md:mb-0 min-w-0 pr-4'; // min-w-0 e pr-4
+                
+                // Icona (Cartella o File)
+                const icon = document.createElement('span');
+                icon.className = `flex-shrink-0 w-5 h-5 mr-2 ${hasChildren ? 'text-brand-blue' : 'text-gray-500'}`;
+                icon.innerHTML = hasChildren ? folderIconSVG : fileIconSVG;
+
+                // Testo Descrizione (ora cliccabile per prompt)
                 const descText = document.createElement('span');
-                descText.className = 'text-sm font-medium text-gray-800 mr-2 truncate'; // Aggiunto truncate
+                descText.className = `text-sm font-medium ${hasChildren ? 'text-brand-blue' : 'text-gray-800'} mr-2 truncate cursor-pointer hover:underline`;
                 descText.textContent = node.name;
                 descText.title = node.name; // Tooltip per testo lungo
+                
+                // Aggiungi al prompt al click
+                descText.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Impedisce l'apertura/chiusura del <details>
+                    addToPrompt(node);
+                });
+
                 const descCopy = createCopyButton('Copia Nome', 'Copiato!', node.name, escapeHTML(node.name));
+                
+                descDiv.appendChild(icon); // Aggiungi icona
                 descDiv.appendChild(descText);
                 descDiv.appendChild(descCopy);
 
@@ -213,7 +272,8 @@
                     const summary = document.createElement('summary');
                     summary.className = 'flex justify-between items-center p-3 cursor-pointer list-none';
                     
-                    const contentDiv = createNodeContent(node);
+                    // Passa 'hasChildren' per decidere icona e stile
+                    const contentDiv = createNodeContent(node, hasChildren); 
                     
                     // Icona Chevron
                     const chevron = document.createElement('span');
@@ -240,9 +300,45 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg shadow-sm';
                     
-                    const contentDiv = createNodeContent(node);
+                    // Passa 'hasChildren' (false) per decidere icona e stile
+                    const contentDiv = createNodeContent(node, hasChildren);
                     itemDiv.appendChild(contentDiv);
                     container.appendChild(itemDiv);
+                }
+            }
+
+            // --- Funzioni per il Prompt Builder ---
+
+            /**
+             * Aggiunge un nodo al prompt.
+             */
+            function addToPrompt(node) {
+                promptItems.push(node);
+                updatePromptDisplay();
+            }
+
+            /**
+             * Aggiorna la UI del prompt (contatore, textarea, bottoni).
+             */
+            function updatePromptDisplay() {
+                // Aggiorna contatore
+                promptCount.textContent = `(${promptItems.length} ${promptItems.length === 1 ? 'elemento' : 'elementi'})`;
+                
+                // Formatta il testo per la copia
+                const outputText = promptItems.map(n => `${n.name} (${n.fullSigla})`).join('\n');
+                promptOutputContent.value = outputText;
+
+                // Abilita/Disabilita bottoni
+                const hasItems = promptItems.length > 0;
+                promptCopyBtn.disabled = !hasItems;
+                promptClearBtn.disabled = !hasItems;
+
+                if (hasItems) {
+                    promptCopyBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                    promptClearBtn.classList.remove('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                } else {
+                    promptCopyBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
+                    promptClearBtn.classList.add('disabled:opacity-50', 'disabled:cursor-not-allowed');
                 }
             }
 
@@ -350,6 +446,22 @@
                 // Avvia la lettura del file
                 reader.readAsText(file);
             });
+
+            // --- Listener per i bottoni del Prompt ---
+            promptClearBtn.addEventListener('click', () => {
+                promptItems = [];
+                updatePromptDisplay();
+            });
+
+            promptCopyBtn.addEventListener('click', () => {
+                if (promptItems.length > 0) {
+                    // Riusa la funzione di copia esistente
+                    copyToClipboard(promptCopyBtn, promptOutputContent.value, 'Copiato!');
+                }
+            });
+
+            // Inizializza lo stato dei bottoni all'avvio
+            updatePromptDisplay();
         });
     </script>
 </body>
