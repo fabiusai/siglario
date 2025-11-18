@@ -25,63 +25,91 @@
     </script>
 
     <style>
-        /* Stile di base per il body per un look pulito */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8faff; /* Un azzurro molto chiaro */
+            background-color: #f8faff;
         }
-
-        /* Stile per il pulsante di copia con feedback */
         .copy-button.copied {
-            background-color: #22c55e; /* green-500 */
+            background-color: #22c55e;
             color: white;
         }
-
-        /* Nasconde il marcatore predefinito dell'elemento <details> */
         summary {
             list-style-type: none;
         }
         summary::-webkit-details-marker {
             display: none;
         }
-
-        /* Stile per l'icona chevron (freccia) */
         .chevron {
             transition: transform 0.2s ease-in-out;
         }
-        /* Ruota l'icona quando l'elemento <details> è aperto */
         details[open] > summary .chevron {
             transform: rotate(90deg);
+        }
+        /* Classe per evidenziare i risultati della ricerca */
+        .highlight-match {
+            background-color: #fef08a; /* yellow-200 */
+            color: #854d0e;
         }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
     <div class="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow-lg mb-8">
-        <header class="mb-6">
+        <header class="mb-6 border-b pb-4">
             <h1 class="text-3xl font-bold text-brand-blue">Navigatore Struttura Organizzativa</h1>
-            <p class="text-lg text-gray-600">Esplora la gerarchia delle unità organizzative con nomi estesi.</p>
+            <p class="text-lg text-gray-600">Esplora la gerarchia, cerca unità e gestisci i dati.</p>
         </header>
 
-        <div class="max-w-7xl mx-auto">
-            <label for="csv-uploader" class="block text-sm font-medium text-gray-700 mb-2">
-                Carica il tuo file <code>.csv</code>:
-            </label>
-            <input type="file" id="csv-uploader" accept=".csv"
-                   class="block w-full text-sm text-gray-500 bg-white rounded-lg shadow-sm p-2 border
-                          file:mr-4 file:py-2 file:px-4
-                          file:rounded-md file:border-0
-                          file:text-sm file:font-semibold
-                          file:bg-brand-blue/10 file:text-brand-blue
-                          hover:file:bg-brand-blue/20 cursor-pointer">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            
+            <div class="md:col-span-4">
+                <label for="csv-uploader" class="block text-sm font-medium text-gray-700 mb-2">
+                    Carica/Aggiorna CSV:
+                </label>
+                <input type="file" id="csv-uploader" accept=".csv"
+                       class="block w-full text-sm text-gray-500 bg-white rounded-lg shadow-sm p-2 border
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-md file:border-0
+                              file:text-sm file:font-semibold
+                              file:bg-brand-blue/10 file:text-brand-blue
+                              hover:file:bg-brand-blue/20 cursor-pointer">
+            </div>
+
+            <div class="md:col-span-5">
+                <label for="search-input" class="block text-sm font-medium text-gray-700 mb-2">
+                    Cerca (Nome o Sigla):
+                </label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <input type="text" id="search-input" 
+                           class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-brand-blue focus:border-brand-blue sm:text-sm" 
+                           placeholder="Es. Comunicazione, COM/CI...">
+                </div>
+            </div>
+
+            <div class="md:col-span-3 flex space-x-2">
+                <button id="collapse-all-btn" class="flex-1 flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                    Chiudi tutto
+                </button>
+                
+                <button id="reset-data-btn" class="flex-none flex items-center justify-center px-3 py-2 border border-red-200 shadow-sm text-sm font-medium rounded-md text-red-600 bg-red-50 hover:bg-red-100 focus:outline-none" title="Elimina dati salvati">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </div>
         </div>
+        
+        <div id="status-bar" class="mt-2 text-xs text-gray-500 h-4"></div>
     </div>
 
-    <main class="max-w-7xl mx-auto pb-32"> <div id="content-container" class="space-y-2">
+    <main class="max-w-7xl mx-auto pb-32">
+        <div id="content-container" class="space-y-2">
             <div id="initial-prompt" class="flex flex-col items-center justify-center p-10 bg-white rounded-lg shadow-sm text-gray-500">
-                <svg class="w-12 h-12 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <span class="text-lg font-medium">In attesa del file...</span>
-                <p class="text-sm">Seleziona un file <code>.csv</code> utilizzando il campo qui sopra.</p>
+                <svg class="w-12 h-12 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span class="text-lg font-medium">Nessun dato caricato</span>
+                <p class="text-sm mt-1">Carica un CSV o ricarica la pagina se avevi salvato dei dati.</p>
             </div>
         </div>
     </main>
@@ -90,156 +118,216 @@
         document.addEventListener('DOMContentLoaded', () => {
             const contentContainer = document.getElementById('content-container');
             const fileInput = document.getElementById('csv-uploader');
+            const searchInput = document.getElementById('search-input');
+            const collapseBtn = document.getElementById('collapse-all-btn');
+            const resetBtn = document.getElementById('reset-data-btn');
+            const statusBar = document.getElementById('status-bar');
+
+            const STORAGE_KEY = 'org_structure_data_v1';
 
             // --- Icone SVG ---
-            const folderIconSVG = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                  <path fill-rule="evenodd" d="M2 4.75A2.75 2.75 0 0 1 4.75 2h5.5A2.75 2.75 0 0 1 13 4.75v1.5a.75.75 0 0 1-1.5 0v-1.5a1.25 1.25 0 0 0-1.25-1.25h-5.5A1.25 1.25 0 0 0 3.5 4.75v10.5a1.25 1.25 0 0 0 1.25 1.25h10.5a1.25 1.25 0 0 0 1.25-1.25v-8.5a.75.75 0 0 1 1.5 0v8.5a2.75 2.75 0 0 1-2.75 2.75H4.75A2.75 2.75 0 0 1 2 15.25V4.75Z" clip-rule="evenodd" />
-                </svg>`;
-            const fileIconSVG = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-                  <path fill-rule="evenodd" d="M4 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.707a2 2 0 0 0-.586-1.414l-4.293-4.293A2 2 0 0 0 11.707 2H4Zm6 6a1 1 0 1 0-2 0v2H6a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0v-2h2a1 1 0 1 0 0-2h-2V8Z" clip-rule="evenodd" />
-                </svg>`;
+            const folderIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M2 4.75A2.75 2.75 0 0 1 4.75 2h5.5A2.75 2.75 0 0 1 13 4.75v1.5a.75.75 0 0 1-1.5 0v-1.5a1.25 1.25 0 0 0-1.25-1.25h-5.5A1.25 1.25 0 0 0 3.5 4.75v10.5a1.25 1.25 0 0 0 1.25 1.25h10.5a1.25 1.25 0 0 0 1.25-1.25v-8.5a.75.75 0 0 1 1.5 0v8.5a2.75 2.75 0 0 1-2.75 2.75H4.75A2.75 2.75 0 0 1 2 15.25V4.75Z" clip-rule="evenodd" /></svg>`;
+            const fileIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M4 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.707a2 2 0 0 0-.586-1.414l-4.293-4.293A2 2 0 0 0 11.707 2H4Zm6 6a1 1 0 1 0-2 0v2H6a1 1 0 1 0 0 2h2v2a1 1 0 1 0 2 0v-2h2a1 1 0 1 0 0-2h-2V8Z" clip-rule="evenodd" /></svg>`;
+
+            // --- PERSISTENZA DATI ---
+
+            // 1. Caricamento automatico all'avvio
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                statusBar.textContent = "Dati recuperati dalla memoria del browser.";
+                processData(savedData, false); // false = non salvare di nuovo
+            }
+
+            // 2. Funzione Reset
+            resetBtn.addEventListener('click', () => {
+                if(confirm('Sei sicuro di voler eliminare i dati salvati nel browser?')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    location.reload();
+                }
+            });
+
+            // --- FUNZIONALITÀ DI RICERCA ---
+
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                filterTree(query);
+            });
+
+            function filterTree(query) {
+                const allItems = contentContainer.querySelectorAll('.tree-item'); // Nodi foglia o contenitori
+                const allDetails = contentContainer.querySelectorAll('details');
+
+                // Reset visualizzazione se query vuota
+                if (!query) {
+                    allItems.forEach(el => {
+                        el.classList.remove('hidden');
+                        removeHighlight(el);
+                    });
+                    allDetails.forEach(el => el.removeAttribute('open'));
+                    return;
+                }
+
+                // Funzione ricorsiva per determinare visibilità
+                // Restituisce true se il nodo o uno dei suoi discendenti corrisponde alla ricerca
+                function checkVisibility(element) {
+                    const nameText = element.getAttribute('data-name').toLowerCase();
+                    const siglaText = element.getAttribute('data-sigla').toLowerCase();
+                    const isMatch = nameText.includes(query) || siglaText.includes(query);
+
+                    // Gestione evidenziatore
+                    if (isMatch) {
+                        highlightMatch(element, query);
+                    } else {
+                        removeHighlight(element);
+                    }
+
+                    let hasVisibleChildren = false;
+
+                    // Se è un details (cartella), controlliamo i figli
+                    if (element.tagName === 'DETAILS') {
+                        const childrenContainer = element.querySelector('.children-container');
+                        if (childrenContainer) {
+                            const children = childrenContainer.children; // Elementi diretti (details o div)
+                            for (let child of children) {
+                                if (checkVisibility(child)) {
+                                    hasVisibleChildren = true;
+                                }
+                            }
+                        }
+                    }
+
+                    // VISIBILITÀ:
+                    // Mostra se: Corrisponde direttamente OPPURE ha figli che corrispondono
+                    if (isMatch || hasVisibleChildren) {
+                        element.classList.remove('hidden');
+                        // Se ho figli visibili (o sono io il match e sono dentro una cartella), devo aprire
+                        if (element.tagName === 'DETAILS' && hasVisibleChildren) {
+                            element.setAttribute('open', '');
+                        }
+                        return true;
+                    } else {
+                        element.classList.add('hidden');
+                        if (element.tagName === 'DETAILS') {
+                            element.removeAttribute('open');
+                        }
+                        return false;
+                    }
+                }
+
+                // Avvia il filtro sui nodi radice
+                const rootNodes = contentContainer.children;
+                for (let node of rootNodes) {
+                    if (node.id !== 'initial-prompt') {
+                        checkVisibility(node);
+                    }
+                }
+            }
+
+            // Helper per evidenziare il testo
+            function highlightMatch(element, query) {
+                // Cerca lo span del nome
+                const nameSpan = element.querySelector('.node-name');
+                if (nameSpan) {
+                    // Logica semplice: se c'è match, cambia colore testo o sfondo
+                    // Per una evidenziazione parziale servirebbe regex complessa sul testo
+                    nameSpan.classList.add('text-brand-blue', 'bg-yellow-100'); 
+                }
+            }
+            
+            function removeHighlight(element) {
+                const nameSpan = element.querySelector('.node-name');
+                if (nameSpan) {
+                    nameSpan.classList.remove('text-brand-blue', 'bg-yellow-100');
+                }
+            }
 
 
-            // --- Funzioni Helper per la UI ---
+            // --- FUNZIONALITÀ CHIUDI TUTTO ---
+            collapseBtn.addEventListener('click', () => {
+                document.querySelectorAll('details').forEach(d => d.removeAttribute('open'));
+                // Pulisce anche la ricerca se attiva? Opzionale. Per ora lasciamo la ricerca attiva.
+            });
 
-            /**
-             * Crea un pulsante "Copia".
-             */
-            function createCopyButton(title, copiedText, textToCopy, escapedText) {
+
+            // --- LOGICA CORE (Process Data, Render, etc) ---
+
+            function createCopyButton(textToCopy) {
                 const button = document.createElement('button');
-                button.className = 'copy-button ml-2 p-1.5 rounded-md bg-gray-100 hover:bg-brand-blue hover:text-white text-gray-600 transition-colors duration-200';
-                button.title = title;
-                button.setAttribute('data-copy', escapedText);
-                button.setAttribute('data-copied-text', copiedText);
-                
-                // Icona "Copia"
-                button.innerHTML = `
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                    </svg>`;
-                
+                button.className = 'copy-button ml-2 p-1 text-gray-400 hover:text-brand-blue transition-colors';
+                button.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
                 button.addEventListener('click', (e) => {
-                    e.preventDefault(); // Impedisce l'apertura/chiusura del <details>
-                    e.stopPropagation(); // Ferma la propagazione
-                    copyToClipboard(button, textToCopy, copiedText);
+                    e.preventDefault(); e.stopPropagation();
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        button.classList.add('copied');
+                        setTimeout(() => button.classList.remove('copied'), 1500);
+                    });
                 });
                 return button;
             }
 
-            /**
-             * Copia il testo negli appunti.
-             */
-            function copyToClipboard(buttonElement, text, copiedText) {
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = 0;
-                document.body.appendChild(textarea);
-                textarea.select();
-                
-                try {
-                    document.execCommand('copy');
-                    
-                    const originalIcon = buttonElement.innerHTML;
-                    buttonElement.innerHTML = copiedText; // Mostra testo "Copiato!"
-                    buttonElement.classList.add('copied');
-                    
-                    setTimeout(() => {
-                        buttonElement.innerHTML = originalIcon; // Ripristina l'icona
-                        buttonElement.classList.remove('copied');
-                    }, 2000);
-
-                } catch (err) {
-                    console.error('Impossibile copiare il testo:', err);
-                } finally {
-                    document.body.removeChild(textarea);
-                }
-            }
-
-            /**
-             * Fa l'escape dell'HTML per gli attributi data-.
-             */
-            function escapeHTML(str) {
-                return str.replace(/&/g, '&amp;')
-                          .replace(/</g, '&lt;')
-                          .replace(/>/g, '&gt;')
-                          .replace(/"/g, '&quot;')
-                          .replace(/'/g, '&#039;');
-            }
-
-            /**
-             * Crea il contenuto HTML per un nodo (nome, sigla, pulsanti).
-             */
             function createNodeContent(node, hasChildren) {
                 const content = document.createElement('div');
                 content.className = 'flex-grow flex flex-col md:flex-row md:items-center justify-between min-w-0';
 
-                // Lato sinistro (Icona + Descrizione)
-                const descDiv = document.createElement('div');
-                descDiv.className = 'flex-grow flex items-center mb-2 md:mb-0 min-w-0 pr-4';
+                // Dati per la ricerca
+                // Nota: questi attributi vanno sul contenitore padre (details o div wrapper)
                 
-                // Icona (Cartella o File)
+                const descDiv = document.createElement('div');
+                descDiv.className = 'flex-grow flex items-center mb-1 md:mb-0 min-w-0 pr-4';
+                
                 const icon = document.createElement('span');
-                icon.className = `flex-shrink-0 w-5 h-5 mr-2 ${hasChildren ? 'text-brand-blue' : 'text-gray-500'}`;
+                icon.className = `flex-shrink-0 w-5 h-5 mr-2 ${hasChildren ? 'text-brand-blue' : 'text-gray-400'}`;
                 icon.innerHTML = hasChildren ? folderIconSVG : fileIconSVG;
 
-                // Testo Descrizione
                 const descText = document.createElement('span');
-                descText.className = `text-sm font-medium ${hasChildren ? 'text-brand-blue' : 'text-gray-800'} mr-2 truncate`;
-                descText.textContent = node.name; // Qui ora avremo il nome "esploso"
+                descText.className = `node-name text-sm font-medium ${hasChildren ? 'text-brand-blue' : 'text-gray-800'} mr-2 truncate transition-colors`;
+                descText.textContent = node.name;
                 descText.title = node.name;
-                
-                const descCopy = createCopyButton('Copia Nome', 'Copiato!', node.name, escapeHTML(node.name));
                 
                 descDiv.appendChild(icon);
                 descDiv.appendChild(descText);
-                descDiv.appendChild(descCopy);
+                descDiv.appendChild(createCopyButton(node.name));
 
-                // Lato destro (Sigla)
                 const siglaDiv = document.createElement('div');
                 siglaDiv.className = 'flex items-center flex-shrink-0';
                 const siglaText = document.createElement('span');
                 siglaText.className = 'text-xs font-mono bg-brand-blue/10 text-brand-blue rounded px-2 py-1 mr-2';
                 siglaText.textContent = node.fullSigla;
-                const siglaCopy = createCopyButton('Copia Sigla', 'Copiato!', node.fullSigla, escapeHTML(node.fullSigla));
                 siglaDiv.appendChild(siglaText);
-                siglaDiv.appendChild(siglaCopy);
+                siglaDiv.appendChild(createCopyButton(node.fullSigla));
                 
                 content.appendChild(descDiv);
                 content.appendChild(siglaDiv);
                 return content;
             }
 
-            /**
-             * Funzione ricorsiva per renderizzare l'albero.
-             */
             function renderNode(node, container) {
                 const hasChildren = Object.keys(node.children).length > 0;
-                
-                // Ordina i figli alfabeticamente per nome
                 const sortedChildren = Object.values(node.children).sort((a, b) => a.name.localeCompare(b.name));
 
                 if (hasChildren) {
                     const details = document.createElement('details');
-                    details.className = 'w-full rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md';
+                    details.className = 'tree-item w-full rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md border border-transparent hover:border-gray-100 mb-1';
                     
+                    // Attributi dati per la ricerca
+                    details.setAttribute('data-name', node.name);
+                    details.setAttribute('data-sigla', node.fullSigla);
+
                     const summary = document.createElement('summary');
-                    summary.className = 'flex justify-between items-center p-3 cursor-pointer list-none transition-colors hover:bg-blue-50';
+                    summary.className = 'flex justify-between items-center p-3 cursor-pointer transition-colors hover:bg-blue-50 rounded-lg';
                     
                     const contentDiv = createNodeContent(node, hasChildren); 
                     
                     const chevron = document.createElement('span');
-                    chevron.className = 'chevron flex-shrink-0 text-gray-500 ml-2';
-                    chevron.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
+                    chevron.className = 'chevron flex-shrink-0 text-gray-400 ml-2';
+                    chevron.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
 
                     summary.appendChild(contentDiv);
                     summary.appendChild(chevron);
                     details.appendChild(summary);
 
                     const childrenContainer = document.createElement('div');
-                    childrenContainer.className = 'pl-6 pb-2 pr-2 space-y-2';
+                    childrenContainer.className = 'children-container pl-6 pb-2 pr-2 space-y-1 border-l-2 border-gray-100 ml-3';
                     
                     sortedChildren.forEach(child => {
                         renderNode(child, childrenContainer);
@@ -250,156 +338,96 @@
 
                 } else {
                     const itemDiv = document.createElement('div');
-                    itemDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg shadow-sm transition-colors hover:bg-gray-5';
+                    itemDiv.className = 'tree-item flex justify-between items-center p-3 bg-white rounded-lg shadow-sm transition-colors hover:bg-gray-50 border border-gray-100 mb-1';
                     
+                    itemDiv.setAttribute('data-name', node.name);
+                    itemDiv.setAttribute('data-sigla', node.fullSigla);
+
                     const contentDiv = createNodeContent(node, hasChildren);
                     itemDiv.appendChild(contentDiv);
                     container.appendChild(itemDiv);
                 }
             }
 
-            /**
-             * Funzione per analizzare il CSV e costruire l'albero.
-             */
-            function processData(csvText) {
+            function processData(csvText, shouldSave = true) {
                 try {
                     contentContainer.innerHTML = '';
 
-                    // 1. Parsing Iniziale (come prima)
+                    // 1. Parsing
                     const rawRows = csvText.trim().split('\n')
-                        .map(row => {
-                            const columns = row.split('","').map(col => col.replace(/"/g, ''));
-                            return columns;
-                        })
+                        .map(row => row.split('","').map(col => col.replace(/"/g, '')))
                         .filter(row => row.length === 2 && row[0] && row[1]);
 
-                    // 2. Mappatura Sigla -> Descrizione Completa
-                    // Serve per cercare i nomi dei "genitori"
+                    // 2. Mappatura & Esplosione Nomi
                     const siglaMap = {};
-                    rawRows.forEach(row => {
-                        const desc = row[0];
-                        const sigla = row[1];
-                        if (sigla) {
-                            siglaMap[sigla.trim()] = desc.trim();
-                        }
-                    });
+                    rawRows.forEach(row => { if(row[1]) siglaMap[row[1].trim()] = row[0].trim(); });
 
-                    // 3. Ricostruzione e Esplosione dei Nomi
-                    // Crea un nuovo set di dati con i nomi estesi
                     const processedData = rawRows.map(row => {
                         const fullSigla = row[1];
-                        const originalDesc = row[0];
-                        
-                        // Se la sigla non è valida, ritorniamo la riga originale
-                        if (!fullSigla) return { desc: originalDesc, sigla: fullSigla };
+                        if (!fullSigla) return { desc: row[0], sigla: fullSigla };
 
                         const parts = fullSigla.split('/');
-                        const reconstructedParts = [];
-                        let currentSiglaBuild = "";
-
-                        // Itera su ogni livello gerarchico (es. COM, poi COM/CI, poi COM/CI/CMR)
-                        parts.forEach((part, index) => {
-                            if (index === 0) {
-                                currentSiglaBuild = part;
-                            } else {
-                                currentSiglaBuild += "/" + part;
+                        const reconstructedParts = parts.map((part, index) => {
+                            const currentPath = parts.slice(0, index + 1).join('/');
+                            if (siglaMap[currentPath]) {
+                                const descParts = siglaMap[currentPath].split('/');
+                                return descParts[descParts.length - 1].trim();
                             }
-
-                            // Cerca la descrizione nel dizionario
-                            if (siglaMap[currentSiglaBuild]) {
-                                const levelDescFull = siglaMap[currentSiglaBuild];
-                                // Prende solo l'ultima parte del nome (dopo l'ultimo slash)
-                                const descParts = levelDescFull.split('/');
-                                const localName = descParts[descParts.length - 1].trim();
-                                reconstructedParts.push(localName);
-                            } else {
-                                // Fallback: se non trova il genitore, usa la sigla
-                                reconstructedParts.push(part);
-                            }
+                            return part;
                         });
 
-                        // Unisce le parti collegate con " / "
-                        const newFullDesc = reconstructedParts.join(' / ');
-                        
-                        return { desc: newFullDesc, sigla: fullSigla };
+                        return { desc: reconstructedParts.join(' / '), sigla: fullSigla };
                     });
 
-                    // 4. Costruzione dell'Albero (usando i dati processati)
+                    // 3. Costruzione Albero
                     const treeRoot = { children: {} };
-
                     processedData.forEach(item => {
-                        const description = item.desc; // Ora contiene il nome esploso
-                        const sigla = item.sigla;
-                        const parts = sigla.split('/');
-                        
                         let currentNode = treeRoot;
-                        let currentPath = [];
-
-                        for (const part of parts) {
-                            currentPath.push(part);
-                            const fullSiglaPart = currentPath.join('/');
-                            
+                        const parts = item.sigla.split('/');
+                        
+                        parts.forEach((part, idx) => {
                             if (!currentNode.children[part]) {
                                 currentNode.children[part] = {
                                     key: part,
-                                    fullSigla: fullSiglaPart,
-                                    name: part, // Nome provvisorio
+                                    fullSigla: parts.slice(0, idx+1).join('/'),
+                                    name: part, 
                                     children: {}
                                 };
                             }
                             currentNode = currentNode.children[part];
-                        }
-                        
-                        // Assegna il nome definitivo (quello esploso) al nodo foglia/corrente
-                        currentNode.name = description;
-                        currentNode.fullSigla = sigla;
+                        });
+                        currentNode.name = item.desc;
                     });
 
-                    // 5. Renderizzazione
+                    // 4. Render
                     const rootNodes = Object.values(treeRoot.children).sort((a, b) => a.name.localeCompare(b.name));
-                    
                     if (rootNodes.length > 0) {
-                        rootNodes.forEach(node => {
-                            renderNode(node, contentContainer);
-                        });
+                        rootNodes.forEach(node => renderNode(node, contentContainer));
+                        // Salva nel localStorage se richiesto
+                        if (shouldSave) {
+                            localStorage.setItem(STORAGE_KEY, csvText);
+                            statusBar.textContent = "Dati elaborati e salvati automaticamente nel browser.";
+                        }
                     } else {
-                        contentContainer.innerHTML = '<p class="text-red-500">Nessun dato valido trovato nel file CSV selezionato.</p>';
+                        contentContainer.innerHTML = '<p class="text-red-500 text-center p-4">Nessun dato valido trovato.</p>';
                     }
                 } catch (error) {
-                    console.error("Errore durante l'analisi del CSV:", error);
-                    contentContainer.innerHTML = `<p class="text-red-600 font-medium">Impossibile analizzare i dati. ${error.message}</p>`;
+                    console.error(error);
+                    contentContainer.innerHTML = `<p class="text-red-600 text-center p-4">Errore: ${error.message}</p>`;
                 }
             }
             
-            // Aggiungi il listener per l'input del file
             fileInput.addEventListener('change', (event) => {
-                const files = event.target.files;
-                if (files.length === 0) {
-                    return; 
-                }
-                const file = files[0];
+                const file = event.target.files[0];
+                if (!file) return;
 
                 contentContainer.innerHTML = `
-                    <div id="loader" class="flex items-center justify-center p-10 bg-white rounded-lg shadow-sm">
-                        <svg class="animate-spin h-8 w-8 text-brand-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span class="ml-3 text-gray-600">Lettura del file...</span>
+                    <div class="flex items-center justify-center p-10">
+                        <svg class="animate-spin h-8 w-8 text-brand-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     </div>`;
 
                 const reader = new FileReader();
-
-                reader.onload = (e) => {
-                    const csvText = e.target.result;
-                    processData(csvText);
-                };
-
-                reader.onerror = (e) => {
-                    console.error("Errore durante la lettura del file:", e);
-                    contentContainer.innerHTML = `<p class="text-red-600 font-medium">Impossibile leggere il file. ${e.message}</p>`;
-                };
-
+                reader.onload = (e) => processData(e.target.result, true);
                 reader.readAsText(file);
             });
         });
