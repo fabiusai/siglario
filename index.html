@@ -6,10 +6,8 @@
     <title>Navigatore Struttura Organizzativa</title>
     <link rel="icon" href="favicon.ico">
     
-    <!-- Caricamento di Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Configurazione personalizzata di Tailwind per i colori brand -->
     <script>
         tailwind.config = {
             theme: {
@@ -26,7 +24,6 @@
         }
     </script>
 
-    <!-- Stili CSS personalizzati -->
     <style>
         /* Stile di base per il body per un look pulito */
         body {
@@ -60,14 +57,12 @@
 </head>
 <body class="p-4 md:p-8">
 
-    <!-- Pannello di Controllo (Header + Upload) -->
     <div class="max-w-7xl mx-auto bg-white p-6 rounded-lg shadow-lg mb-8">
         <header class="mb-6">
             <h1 class="text-3xl font-bold text-brand-blue">Navigatore Struttura Organizzativa</h1>
-            <p class="text-lg text-gray-600">Esplora la gerarchia delle unità organizzative.</p>
+            <p class="text-lg text-gray-600">Esplora la gerarchia delle unità organizzative con nomi estesi.</p>
         </header>
 
-        <!-- Sezione di Upload File -->
         <div class="max-w-7xl mx-auto">
             <label for="csv-uploader" class="block text-sm font-medium text-gray-700 mb-2">
                 Carica il tuo file <code>.csv</code>:
@@ -82,10 +77,7 @@
         </div>
     </div>
 
-    <main class="max-w-7xl mx-auto pb-32"> <!-- Aggiunto padding-bottom -->
-        <!-- Il contenitore principale dove verrà costruito l'albero gerarchico -->
-        <div id="content-container" class="space-y-2">
-            <!-- Stato Iniziale -->
+    <main class="max-w-7xl mx-auto pb-32"> <div id="content-container" class="space-y-2">
             <div id="initial-prompt" class="flex flex-col items-center justify-center p-10 bg-white rounded-lg shadow-sm text-gray-500">
                 <svg class="w-12 h-12 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 <span class="text-lg font-medium">In attesa del file...</span>
@@ -94,17 +86,11 @@
         </div>
     </main>
 
-    <!-- ========= SEZIONE PROMPT STICKY RIMOSSA ========= -->
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const contentContainer = document.getElementById('content-container');
             const fileInput = document.getElementById('csv-uploader');
 
-            // --- Elementi del Prompt Builder RIMOSSI ---
-            
-            // --- Stato Globale RIMOSSO ---
-            
             // --- Icone SVG ---
             const folderIconSVG = `
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
@@ -185,32 +171,29 @@
 
             /**
              * Crea il contenuto HTML per un nodo (nome, sigla, pulsanti).
-             * Aggiunta logica per icone e selezione prompt.
              */
             function createNodeContent(node, hasChildren) {
                 const content = document.createElement('div');
-                content.className = 'flex-grow flex flex-col md:flex-row md:items-center justify-between min-w-0'; // min-w-0 per wrapping
+                content.className = 'flex-grow flex flex-col md:flex-row md:items-center justify-between min-w-0';
 
                 // Lato sinistro (Icona + Descrizione)
                 const descDiv = document.createElement('div');
-                descDiv.className = 'flex-grow flex items-center mb-2 md:mb-0 min-w-0 pr-4'; // min-w-0 e pr-4
+                descDiv.className = 'flex-grow flex items-center mb-2 md:mb-0 min-w-0 pr-4';
                 
                 // Icona (Cartella o File)
                 const icon = document.createElement('span');
                 icon.className = `flex-shrink-0 w-5 h-5 mr-2 ${hasChildren ? 'text-brand-blue' : 'text-gray-500'}`;
                 icon.innerHTML = hasChildren ? folderIconSVG : fileIconSVG;
 
-                // Testo Descrizione (non più cliccabile per prompt)
+                // Testo Descrizione
                 const descText = document.createElement('span');
-                descText.className = `text-sm font-medium ${hasChildren ? 'text-brand-blue' : 'text-gray-800'} mr-2 truncate`; // Rimossi cursor-pointer e hover:underline
-                descText.textContent = node.name;
-                descText.title = node.name; // Tooltip per testo lungo
+                descText.className = `text-sm font-medium ${hasChildren ? 'text-brand-blue' : 'text-gray-800'} mr-2 truncate`;
+                descText.textContent = node.name; // Qui ora avremo il nome "esploso"
+                descText.title = node.name;
                 
-                // Event listener rimosso
-
                 const descCopy = createCopyButton('Copia Nome', 'Copiato!', node.name, escapeHTML(node.name));
                 
-                descDiv.appendChild(icon); // Aggiungi icona
+                descDiv.appendChild(icon);
                 descDiv.appendChild(descText);
                 descDiv.appendChild(descCopy);
 
@@ -218,7 +201,7 @@
                 const siglaDiv = document.createElement('div');
                 siglaDiv.className = 'flex items-center flex-shrink-0';
                 const siglaText = document.createElement('span');
-                siglaText.className = 'text-xs font-mono bg-brand-blue/10 text-brand-blue rounded px-2 py-1 mr-2'; // Sfondo colorato
+                siglaText.className = 'text-xs font-mono bg-brand-blue/10 text-brand-blue rounded px-2 py-1 mr-2';
                 siglaText.textContent = node.fullSigla;
                 const siglaCopy = createCopyButton('Copia Sigla', 'Copiato!', node.fullSigla, escapeHTML(node.fullSigla));
                 siglaDiv.appendChild(siglaText);
@@ -235,21 +218,18 @@
             function renderNode(node, container) {
                 const hasChildren = Object.keys(node.children).length > 0;
                 
-                // Ordina i figli alfabeticamente per nome (descrizione)
+                // Ordina i figli alfabeticamente per nome
                 const sortedChildren = Object.values(node.children).sort((a, b) => a.name.localeCompare(b.name));
 
                 if (hasChildren) {
-                    // Crea un <details> se ha figli
                     const details = document.createElement('details');
                     details.className = 'w-full rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md';
                     
                     const summary = document.createElement('summary');
-                    summary.className = 'flex justify-between items-center p-3 cursor-pointer list-none transition-colors hover:bg-blue-50'; // Aggiunto hover
+                    summary.className = 'flex justify-between items-center p-3 cursor-pointer list-none transition-colors hover:bg-blue-50';
                     
-                    // Passa 'hasChildren' per decidere icona e stile
                     const contentDiv = createNodeContent(node, hasChildren); 
                     
-                    // Icona Chevron
                     const chevron = document.createElement('span');
                     chevron.className = 'chevron flex-shrink-0 text-gray-500 ml-2';
                     chevron.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>`;
@@ -258,85 +238,124 @@
                     summary.appendChild(chevron);
                     details.appendChild(summary);
 
-                    // Contenitore per i figli
                     const childrenContainer = document.createElement('div');
-                    childrenContainer.className = 'pl-6 pb-2 pr-2 space-y-2'; // Indentazione per i figli
+                    childrenContainer.className = 'pl-6 pb-2 pr-2 space-y-2';
                     
                     sortedChildren.forEach(child => {
-                        renderNode(child, childrenContainer); // Chiamata ricorsiva
+                        renderNode(child, childrenContainer);
                     });
                     
                     details.appendChild(childrenContainer);
                     container.appendChild(details);
 
                 } else {
-                    // Crea un semplice <div> se non ha figli (nodo foglia)
                     const itemDiv = document.createElement('div');
-                    itemDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg shadow-sm transition-colors hover:bg-gray-50'; // Aggiunto hover
+                    itemDiv.className = 'flex justify-between items-center p-3 bg-white rounded-lg shadow-sm transition-colors hover:bg-gray-5';
                     
-                    // Passa 'hasChildren' (false) per decidere icona e stile
                     const contentDiv = createNodeContent(node, hasChildren);
                     itemDiv.appendChild(contentDiv);
                     container.appendChild(itemDiv);
                 }
             }
 
-            // --- Funzioni per il Prompt Builder RIMOSSE ---
-
-            // --- Logica Principale ---
-
             /**
              * Funzione per analizzare il CSV e costruire l'albero.
-             * QUESTA FUNZIONE È INVARIATA, riceve solo il testo da una fonte diversa.
              */
             function processData(csvText) {
                 try {
-                    // Pulisce il contenitore (rimuove il prompt o il loader)
                     contentContainer.innerHTML = '';
 
-                    const data = csvText.trim().split('\n')
+                    // 1. Parsing Iniziale (come prima)
+                    const rawRows = csvText.trim().split('\n')
                         .map(row => {
-                            // Gestisce le virgolette nel CSV
                             const columns = row.split('","').map(col => col.replace(/"/g, ''));
                             return columns;
                         })
-                        .filter(row => row.length === 2 && row[0] && row[1]); // Filtra righe non valide
+                        .filter(row => row.length === 2 && row[0] && row[1]);
 
-                    // Costruisce l'albero
+                    // 2. Mappatura Sigla -> Descrizione Completa
+                    // Serve per cercare i nomi dei "genitori"
+                    const siglaMap = {};
+                    rawRows.forEach(row => {
+                        const desc = row[0];
+                        const sigla = row[1];
+                        if (sigla) {
+                            siglaMap[sigla.trim()] = desc.trim();
+                        }
+                    });
+
+                    // 3. Ricostruzione e Esplosione dei Nomi
+                    // Crea un nuovo set di dati con i nomi estesi
+                    const processedData = rawRows.map(row => {
+                        const fullSigla = row[1];
+                        const originalDesc = row[0];
+                        
+                        // Se la sigla non è valida, ritorniamo la riga originale
+                        if (!fullSigla) return { desc: originalDesc, sigla: fullSigla };
+
+                        const parts = fullSigla.split('/');
+                        const reconstructedParts = [];
+                        let currentSiglaBuild = "";
+
+                        // Itera su ogni livello gerarchico (es. COM, poi COM/CI, poi COM/CI/CMR)
+                        parts.forEach((part, index) => {
+                            if (index === 0) {
+                                currentSiglaBuild = part;
+                            } else {
+                                currentSiglaBuild += "/" + part;
+                            }
+
+                            // Cerca la descrizione nel dizionario
+                            if (siglaMap[currentSiglaBuild]) {
+                                const levelDescFull = siglaMap[currentSiglaBuild];
+                                // Prende solo l'ultima parte del nome (dopo l'ultimo slash)
+                                const descParts = levelDescFull.split('/');
+                                const localName = descParts[descParts.length - 1].trim();
+                                reconstructedParts.push(localName);
+                            } else {
+                                // Fallback: se non trova il genitore, usa la sigla
+                                reconstructedParts.push(part);
+                            }
+                        });
+
+                        // Unisce le parti collegate con " / "
+                        const newFullDesc = reconstructedParts.join(' / ');
+                        
+                        return { desc: newFullDesc, sigla: fullSigla };
+                    });
+
+                    // 4. Costruzione dell'Albero (usando i dati processati)
                     const treeRoot = { children: {} };
 
-                    data.forEach(row => {
-                        const description = row[0];
-                        const sigla = row[1];
+                    processedData.forEach(item => {
+                        const description = item.desc; // Ora contiene il nome esploso
+                        const sigla = item.sigla;
                         const parts = sigla.split('/');
                         
                         let currentNode = treeRoot;
                         let currentPath = [];
 
-                        // Itera su ogni parte della sigla (es. "ACQ", "AL", "F")
                         for (const part of parts) {
                             currentPath.push(part);
                             const fullSiglaPart = currentPath.join('/');
                             
                             if (!currentNode.children[part]) {
-                                // Se il nodo non esiste, lo crea con un nome/sigla di fallback
                                 currentNode.children[part] = {
                                     key: part,
                                     fullSigla: fullSiglaPart,
-                                    name: part, // Fallback name
+                                    name: part, // Nome provvisorio
                                     children: {}
                                 };
                             }
-                            // Si sposta al nodo figlio
                             currentNode = currentNode.children[part];
                         }
                         
-                        // Alla fine del ciclo, aggiorna il nodo con i dati corretti dalla riga CSV
+                        // Assegna il nome definitivo (quello esploso) al nodo foglia/corrente
                         currentNode.name = description;
                         currentNode.fullSigla = sigla;
                     });
 
-                    // Avvia la renderizzazione partendo dai nodi radice
+                    // 5. Renderizzazione
                     const rootNodes = Object.values(treeRoot.children).sort((a, b) => a.name.localeCompare(b.name));
                     
                     if (rootNodes.length > 0) {
@@ -356,11 +375,10 @@
             fileInput.addEventListener('change', (event) => {
                 const files = event.target.files;
                 if (files.length === 0) {
-                    return; // Nessun file selezionato
+                    return; 
                 }
                 const file = files[0];
 
-                // 1. Mostra un loader mentre legge
                 contentContainer.innerHTML = `
                     <div id="loader" class="flex items-center justify-center p-10 bg-white rounded-lg shadow-sm">
                         <svg class="animate-spin h-8 w-8 text-brand-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -370,12 +388,10 @@
                         <span class="ml-3 text-gray-600">Lettura del file...</span>
                     </div>`;
 
-                // 2. Leggi il file
                 const reader = new FileReader();
 
                 reader.onload = (e) => {
                     const csvText = e.target.result;
-                    // 3. Processa i dati (questa funzione pulirà il loader)
                     processData(csvText);
                 };
 
@@ -384,13 +400,8 @@
                     contentContainer.innerHTML = `<p class="text-red-600 font-medium">Impossibile leggere il file. ${e.message}</p>`;
                 };
 
-                // Avvia la lettura del file
                 reader.readAsText(file);
             });
-
-            // --- Listener per i bottoni del Prompt RIMOSSI ---
-            
-            // Inizializzazione bottoni RIMOSSA
         });
     </script>
 </body>
